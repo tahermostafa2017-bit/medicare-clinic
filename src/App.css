@@ -402,3 +402,15 @@ tr:hover td {
   border-radius: 8px;
   font-size: 14px;
 }
+.app-container {
+  text-align: right;
+}
+
+.menu-item {
+  text-align: right;
+}
+
+.edit-btn {
+  margin-right: 0;
+  margin-left: 6px;
+}

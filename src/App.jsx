@@ -5,6 +5,36 @@ const emptyPatient = { name: '', phone: '', age: '', gender: 'Male' };
 const emptyDoctor = { name: '', specialty: '', phone: '', email: '' };
 const emptyAppointment = { patient: '', doctor: '', date: '', time: '' };
 
+const pageLabels = {
+  Dashboard: 'لوحة التحكم',
+  Patients: 'المرضى',
+  Appointments: 'المواعيد',
+  Doctors: 'الأطباء',
+  Settings: 'الإعدادات'
+};
+
+const statusLabels = {
+  Scheduled: 'مجدول',
+  Completed: 'مكتمل',
+  Cancelled: 'ملغي'
+};
+
+const genderLabels = {
+  Male: 'ذكر',
+  Female: 'أنثى'
+};
+
+const menuItems = ['Dashboard', 'Patients', 'Appointments', 'Doctors', 'Settings'];
+
+const formatDate = (d) =>
+  d
+    ? new Date(d + 'T00:00:00').toLocaleDateString('ar-EG', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    : '';
+
 function App() {
   const [page, setPage] = useState('Dashboard');
 
@@ -19,7 +49,11 @@ function App() {
   );
   const [settings, setSettings] = useState(() => {
     const saved = JSON.parse(localStorage.getItem('medicare_settings') || 'null');
-    return saved || { clinicName: 'MediCare', adminName: 'Administrator' };
+    if (!saved) return { clinicName: 'ميديكير', adminName: 'المدير' };
+    return {
+      ...saved,
+      adminName: saved.adminName === 'Administrator' ? 'المدير' : saved.adminName
+    };
   });
 
   const [patientForm, setPatientForm] = useState(emptyPatient);
@@ -53,7 +87,7 @@ function App() {
 
   const today = new Date().toLocaleDateString('en-CA');
 
-  // Patients
+  // المرضى
 
   const savePatient = (e) => {
     e.preventDefault();
@@ -65,7 +99,7 @@ function App() {
         prev.map(p => (p.id === editingPatientId ? { ...p, ...patientForm } : p))
       );
 
-      // Keep appointments in sync if the name changed
+      // تحديث الاسم في المواعيد إذا تغيّر
       if (old && old.name !== patientForm.name) {
         setAppointments(prev =>
           prev.map(a =>
@@ -99,12 +133,12 @@ function App() {
   };
 
   const deletePatient = (id) => {
-    if (!window.confirm('Delete this patient?')) return;
+    if (!window.confirm('هل تريد حذف هذا المريض؟')) return;
     setPatients(prev => prev.filter(p => p.id !== id));
     if (editingPatientId === id) cancelEditPatient();
   };
 
-  // Doctors
+  // الأطباء
 
   const saveDoctor = (e) => {
     e.preventDefault();
@@ -149,26 +183,25 @@ function App() {
   };
 
   const deleteDoctor = (id) => {
-    if (!window.confirm('Delete this doctor?')) return;
+    if (!window.confirm('هل تريد حذف هذا الطبيب؟')) return;
     setDoctors(prev => prev.filter(d => d.id !== id));
     if (editingDoctorId === id) cancelEditDoctor();
   };
 
-  // Appointments
+  // المواعيد
 
-  // Returns a message if the slot conflicts, otherwise null.
-  // excludeId lets us ignore the appointment being edited.
+  // ترجع رسالة إذا كان هناك تعارض، وإلا null
   const findConflict = (doctor, patient, date, time, excludeId = null) => {
     const active = appointments.filter(
       a => a.status !== 'Cancelled' && a.id !== excludeId
     );
 
     if (active.some(a => a.doctor === doctor && a.date === date && a.time === time)) {
-      return 'This doctor already has an appointment at this date and time.';
+      return 'هذا الطبيب لديه موعد آخر في نفس التاريخ والوقت.';
     }
 
     if (active.some(a => a.patient === patient && a.date === date && a.time === time)) {
-      return 'This patient already has an appointment at this date and time.';
+      return 'هذا المريض لديه موعد آخر في نفس التاريخ والوقت.';
     }
 
     return null;
@@ -223,11 +256,11 @@ function App() {
   };
 
   const deleteAppointment = (id) => {
-    if (!window.confirm('Delete this appointment?')) return;
+    if (!window.confirm('هل تريد حذف هذا الموعد؟')) return;
     setAppointments(prev => prev.filter(a => a.id !== id));
   };
 
-  // Settings
+  // الإعدادات
 
   const exportData = () => {
     const data = { patients, doctors, appointments, settings };
@@ -243,7 +276,7 @@ function App() {
   };
 
   const resetAllData = () => {
-    if (!window.confirm('Delete ALL patients, doctors and appointments? This cannot be undone.')) return;
+    if (!window.confirm('سيتم حذف كل المرضى والأطباء والمواعيد نهائياً. هل أنت متأكد؟')) return;
     setPatients([]);
     setDoctors([]);
     setAppointments([]);
@@ -251,7 +284,7 @@ function App() {
     cancelEditDoctor();
   };
 
-  // Derived lists
+  // القوائم المحسوبة
 
   const sortedAppointments = [...appointments].sort((a, b) =>
     (a.date + a.time).localeCompare(b.date + b.time)
@@ -290,15 +323,13 @@ function App() {
     return matchesText && matchesStatus && matchesDate;
   });
 
-  const menuItems = ['Dashboard', 'Patients', 'Appointments', 'Doctors', 'Settings'];
-
   return (
-    <div className="app-container">
+    <div className="app-container" dir="rtl" lang="ar">
 
       <aside className="sidebar">
         <h2 className="logo">{settings.clinicName}<span>.</span></h2>
 
-        <p className="menu-title">MAIN MENU</p>
+        <p className="menu-title">القائمة الرئيسية</p>
 
         <nav>
           {menuItems.map(item => (
@@ -307,82 +338,82 @@ function App() {
               className={page === item ? 'menu-item active' : 'menu-item'}
               onClick={() => setPage(item)}
             >
-              {item}
+              {pageLabels[item]}
             </button>
           ))}
         </nav>
 
-        <div className="sidebar-footer">Clinic Management System</div>
+        <div className="sidebar-footer">نظام إدارة العيادة</div>
       </aside>
 
       <main className="main-content">
 
         <header className="topbar">
           <div>
-            <h2>{page}</h2>
-            <p>Welcome to {settings.clinicName} Management System</p>
+            <h2>{pageLabels[page]}</h2>
+            <p>مرحباً بك في نظام إدارة {settings.clinicName}</p>
           </div>
 
           <div className="admin-profile">
             <div className="avatar">
-              {(settings.adminName || 'A').charAt(0).toUpperCase()}
+              {(settings.adminName || 'م').charAt(0).toUpperCase()}
             </div>
             <span>{settings.adminName}</span>
           </div>
         </header>
 
-        {/* Dashboard */}
+        {/* لوحة التحكم */}
 
         {page === 'Dashboard' && (
           <section>
 
             <div className="welcome-card">
               <div>
-                <h1>Welcome to {settings.clinicName}</h1>
-                <p>Manage your clinic efficiently and easily.</p>
+                <h1>مرحباً بك في {settings.clinicName}</h1>
+                <p>أدر عيادتك بسهولة وكفاءة.</p>
               </div>
             </div>
 
             <div className="stats-grid">
               <div className="stat-card">
-                <p>Total Patients</p>
+                <p>إجمالي المرضى</p>
                 <h2>{patients.length}</h2>
-                <span>Registered Patients</span>
+                <span>المرضى المسجلون</span>
               </div>
 
               <div className="stat-card">
-                <p>Total Appointments</p>
+                <p>إجمالي المواعيد</p>
                 <h2>{appointments.length}</h2>
-                <span>All Appointments</span>
+                <span>كل المواعيد</span>
               </div>
 
               <div className="stat-card">
-                <p>Total Doctors</p>
+                <p>إجمالي الأطباء</p>
                 <h2>{doctors.length}</h2>
-                <span>Registered Doctors</span>
+                <span>الأطباء المسجلون</span>
               </div>
 
               <div className="stat-card">
-                <p>Today's Appointments</p>
+                <p>مواعيد اليوم</p>
                 <h2>{todayCount}</h2>
-                <span>Scheduled Today</span>
+                <span>مجدولة اليوم</span>
               </div>
             </div>
 
             <div className="section-card">
-              <h3>Upcoming Appointments</h3>
+              <h3>المواعيد القادمة</h3>
 
               {upcoming.length === 0 ? (
-                <p>No upcoming appointments.</p>
+                <p>لا توجد مواعيد قادمة.</p>
               ) : (
                 <div className="table-wrapper">
                   <table>
                     <thead>
                       <tr>
-                        <th>Patient</th>
-                        <th>Doctor</th>
-                        <th>Date</th>
-                        <th>Time</th>
+                        <th>المريض</th>
+                        <th>الطبيب</th>
+                        <th>التاريخ</th>
+                        <th>الوقت</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -390,7 +421,7 @@ function App() {
                         <tr key={a.id}>
                           <td>{a.patient}</td>
                           <td>{a.doctor}</td>
-                          <td>{a.date}</td>
+                          <td>{formatDate(a.date)}</td>
                           <td>{a.time}</td>
                         </tr>
                       ))}
@@ -401,19 +432,19 @@ function App() {
             </div>
 
             <div className="section-card">
-              <h3>Recent Patients</h3>
+              <h3>أحدث المرضى</h3>
 
               {patients.length === 0 ? (
-                <p>No patients registered yet.</p>
+                <p>لا يوجد مرضى مسجلون بعد.</p>
               ) : (
                 <div className="table-wrapper">
                   <table>
                     <thead>
                       <tr>
-                        <th>Name</th>
-                        <th>Phone</th>
-                        <th>Age</th>
-                        <th>Gender</th>
+                        <th>الاسم</th>
+                        <th>الهاتف</th>
+                        <th>العمر</th>
+                        <th>الجنس</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -422,7 +453,7 @@ function App() {
                           <td>{p.name}</td>
                           <td>{p.phone}</td>
                           <td>{p.age}</td>
-                          <td>{p.gender}</td>
+                          <td>{genderLabels[p.gender] || p.gender}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -434,26 +465,26 @@ function App() {
           </section>
         )}
 
-        {/* Patients */}
+        {/* المرضى */}
 
         {page === 'Patients' && (
           <section className="section-card">
 
-            <h2>Patient Management</h2>
+            <h2>إدارة المرضى</h2>
 
             <form className="patient-form" onSubmit={savePatient}>
 
-              <h3>{editingPatientId ? 'Edit Patient' : 'Register New Patient'}</h3>
+              <h3>{editingPatientId ? 'تعديل بيانات المريض' : 'تسجيل مريض جديد'}</h3>
 
               <input
-                placeholder="Patient Name"
+                placeholder="اسم المريض"
                 required
                 value={patientForm.name}
                 onChange={e => setPatientForm({ ...patientForm, name: e.target.value })}
               />
 
               <input
-                placeholder="Phone Number"
+                placeholder="رقم الهاتف"
                 required
                 value={patientForm.phone}
                 onChange={e => setPatientForm({ ...patientForm, phone: e.target.value })}
@@ -461,7 +492,7 @@ function App() {
 
               <input
                 type="number"
-                placeholder="Age"
+                placeholder="العمر"
                 min="0"
                 required
                 value={patientForm.age}
@@ -472,13 +503,13 @@ function App() {
                 value={patientForm.gender}
                 onChange={e => setPatientForm({ ...patientForm, gender: e.target.value })}
               >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="Male">ذكر</option>
+                <option value="Female">أنثى</option>
               </select>
 
               <div className="form-actions">
                 <button className="primary-btn" type="submit">
-                  {editingPatientId ? 'Save Changes' : '+ Add Patient'}
+                  {editingPatientId ? 'حفظ التعديلات' : '+ إضافة مريض'}
                 </button>
 
                 {editingPatientId && (
@@ -487,19 +518,19 @@ function App() {
                     type="button"
                     onClick={cancelEditPatient}
                   >
-                    Cancel
+                    إلغاء
                   </button>
                 )}
               </div>
 
             </form>
 
-            <h3>Patients List ({filteredPatients.length})</h3>
+            <h3>قائمة المرضى ({filteredPatients.length})</h3>
 
             <div className="toolbar">
               <input
                 className="search-input"
-                placeholder="Search by name or phone..."
+                placeholder="ابحث بالاسم أو رقم الهاتف..."
                 value={patientSearch}
                 onChange={e => setPatientSearch(e.target.value)}
               />
@@ -509,11 +540,11 @@ function App() {
               <table>
                 <thead>
                   <tr>
-                    <th>Name</th>
-                    <th>Phone</th>
-                    <th>Age</th>
-                    <th>Gender</th>
-                    <th>Action</th>
+                    <th>الاسم</th>
+                    <th>الهاتف</th>
+                    <th>العمر</th>
+                    <th>الجنس</th>
+                    <th>الإجراءات</th>
                   </tr>
                 </thead>
 
@@ -523,21 +554,21 @@ function App() {
                       <td>{p.name}</td>
                       <td>{p.phone}</td>
                       <td>{p.age}</td>
-                      <td>{p.gender}</td>
+                      <td>{genderLabels[p.gender] || p.gender}</td>
                       <td>
                         <button
                           type="button"
                           className="edit-btn"
                           onClick={() => startEditPatient(p)}
                         >
-                          Edit
+                          تعديل
                         </button>
                         <button
                           type="button"
                           className="delete-btn"
                           onClick={() => deletePatient(p.id)}
                         >
-                          Delete
+                          حذف
                         </button>
                       </td>
                     </tr>
@@ -546,7 +577,7 @@ function App() {
                   {filteredPatients.length === 0 && (
                     <tr>
                       <td colSpan="5">
-                        {patients.length === 0 ? 'No patients yet' : 'No matching patients'}
+                        {patients.length === 0 ? 'لا يوجد مرضى بعد' : 'لا توجد نتائج مطابقة'}
                       </td>
                     </tr>
                   )}
@@ -557,34 +588,34 @@ function App() {
           </section>
         )}
 
-        {/* Doctors */}
+        {/* الأطباء */}
 
         {page === 'Doctors' && (
           <section className="section-card">
 
-            <h2>Doctor Management</h2>
-            <p className="welcome-text">Manage your clinic medical staff.</p>
+            <h2>إدارة الأطباء</h2>
+            <p className="welcome-text">أدر الكادر الطبي في عيادتك.</p>
 
             <form className="patient-form" onSubmit={saveDoctor}>
 
-              <h3>{editingDoctorId ? 'Edit Doctor' : 'Register New Doctor'}</h3>
+              <h3>{editingDoctorId ? 'تعديل بيانات الطبيب' : 'تسجيل طبيب جديد'}</h3>
 
               <input
-                placeholder="Doctor Name"
+                placeholder="اسم الطبيب"
                 required
                 value={doctorForm.name}
                 onChange={e => setDoctorForm({ ...doctorForm, name: e.target.value })}
               />
 
               <input
-                placeholder="Medical Specialty"
+                placeholder="التخصص الطبي"
                 required
                 value={doctorForm.specialty}
                 onChange={e => setDoctorForm({ ...doctorForm, specialty: e.target.value })}
               />
 
               <input
-                placeholder="Phone Number"
+                placeholder="رقم الهاتف"
                 required
                 value={doctorForm.phone}
                 onChange={e => setDoctorForm({ ...doctorForm, phone: e.target.value })}
@@ -592,14 +623,14 @@ function App() {
 
               <input
                 type="email"
-                placeholder="Email Address"
+                placeholder="البريد الإلكتروني (اختياري)"
                 value={doctorForm.email}
                 onChange={e => setDoctorForm({ ...doctorForm, email: e.target.value })}
               />
 
               <div className="form-actions">
                 <button className="primary-btn" type="submit">
-                  {editingDoctorId ? 'Save Changes' : '+ Add Doctor'}
+                  {editingDoctorId ? 'حفظ التعديلات' : '+ إضافة طبيب'}
                 </button>
 
                 {editingDoctorId && (
@@ -608,19 +639,19 @@ function App() {
                     type="button"
                     onClick={cancelEditDoctor}
                   >
-                    Cancel
+                    إلغاء
                   </button>
                 )}
               </div>
 
             </form>
 
-            <h3>Doctors List ({filteredDoctors.length})</h3>
+            <h3>قائمة الأطباء ({filteredDoctors.length})</h3>
 
             <div className="toolbar">
               <input
                 className="search-input"
-                placeholder="Search by name or specialty..."
+                placeholder="ابحث بالاسم أو التخصص..."
                 value={doctorSearch}
                 onChange={e => setDoctorSearch(e.target.value)}
               />
@@ -630,21 +661,46 @@ function App() {
               <table>
                 <thead>
                   <tr>
-                    <th>Doctor Name</th>
-                    <th>Specialty</th>
-                    <th>Phone</th>
-                    <th>Email</th>
-                    <th>Action</th>
+                    <th>اسم الطبيب</th>
+                    <th>التخصص</th>
+                    <th>الهاتف</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>الإجراءات</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                 {filteredDoctors.length === 0 && (
+                  {filteredDoctors.map(d => (
+                    <tr key={d.id}>
+                      <td>{d.name}</td>
+                      <td>{d.specialty}</td>
+                      <td>{d.phone}</td>
+                      <td>{d.email || '-'}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="edit-btn"
+                          onClick={() => startEditDoctor(d)}
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          type="button"
+                          className="delete-btn"
+                          onClick={() => deleteDoctor(d.id)}
+                        >
+                          حذف
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {filteredDoctors.length === 0 && (
                     <tr>
                       <td colSpan="5">
                         {doctors.length === 0
-                          ? 'No doctors registered yet.'
-                          : 'No matching doctors'}
+                          ? 'لا يوجد أطباء مسجلون بعد.'
+                          : 'لا توجد نتائج مطابقة'}
                       </td>
                     </tr>
                   )}
@@ -655,23 +711,23 @@ function App() {
           </section>
         )}
 
-        {/* Appointments */}
+        {/* المواعيد */}
 
         {page === 'Appointments' && (
           <section className="section-card">
 
-            <h2>Appointment Management</h2>
+            <h2>إدارة المواعيد</h2>
 
             <form className="patient-form" onSubmit={addAppointment}>
 
-              <h3>Book New Appointment</h3>
+              <h3>حجز موعد جديد</h3>
 
               <select
                 required
                 value={appointmentForm.patient}
                 onChange={e => setAppointmentForm({ ...appointmentForm, patient: e.target.value })}
               >
-                <option value="">Select Patient</option>
+                <option value="">اختر المريض</option>
                 {patients.map(p => (
                   <option key={p.id} value={p.name}>{p.name}</option>
                 ))}
@@ -682,7 +738,7 @@ function App() {
                 value={appointmentForm.doctor}
                 onChange={e => setAppointmentForm({ ...appointmentForm, doctor: e.target.value })}
               >
-                <option value="">Select Doctor</option>
+                <option value="">اختر الطبيب</option>
                 {doctors.map(d => (
                   <option key={d.id} value={d.name}>
                     {d.name} - {d.specialty}
@@ -710,32 +766,32 @@ function App() {
                 type="submit"
                 disabled={patients.length === 0 || doctors.length === 0}
               >
-                + Book Appointment
+                + حجز موعد
               </button>
 
             </form>
 
-            {doctors.length === 0 && (
+            {(patients.length === 0 || doctors.length === 0) && (
               <p className="welcome-text">
-                Please register a doctor before booking an appointment.
+                يجب تسجيل مريض وطبيب واحد على الأقل قبل حجز موعد.
               </p>
             )}
 
-            <h3>Appointments List ({filteredAppointments.length})</h3>
+            <h3>قائمة المواعيد ({filteredAppointments.length})</h3>
 
             <div className="toolbar">
               <input
                 className="search-input"
-                placeholder="Search by patient or doctor..."
+                placeholder="ابحث باسم المريض أو الطبيب..."
                 value={apptSearch}
                 onChange={e => setApptSearch(e.target.value)}
               />
 
               <select value={apptStatus} onChange={e => setApptStatus(e.target.value)}>
-                <option value="All">All Statuses</option>
-                <option value="Scheduled">Scheduled</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="All">كل الحالات</option>
+                <option value="Scheduled">مجدول</option>
+                <option value="Completed">مكتمل</option>
+                <option value="Cancelled">ملغي</option>
               </select>
 
               <input
@@ -753,7 +809,7 @@ function App() {
                   setApptDate('');
                 }}
               >
-                Clear Filters
+                مسح الفلاتر
               </button>
             </div>
 
@@ -761,12 +817,12 @@ function App() {
               <table>
                 <thead>
                   <tr>
-                    <th>Patient</th>
-                    <th>Doctor</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                    <th>Action</th>
+                    <th>المريض</th>
+                    <th>الطبيب</th>
+                    <th>التاريخ</th>
+                    <th>الوقت</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
                   </tr>
                 </thead>
 
@@ -775,16 +831,16 @@ function App() {
                     <tr key={item.id}>
                       <td>{item.patient}</td>
                       <td>{item.doctor}</td>
-                      <td>{item.date}</td>
+                      <td>{formatDate(item.date)}</td>
                       <td>{item.time}</td>
                       <td>
                         <select
                           value={item.status}
                           onChange={e => updateAppointmentStatus(item.id, e.target.value)}
                         >
-                          <option value="Scheduled">Scheduled</option>
-                          <option value="Completed">Completed</option>
-                          <option value="Cancelled">Cancelled</option>
+                          <option value="Scheduled">{statusLabels.Scheduled}</option>
+                          <option value="Completed">{statusLabels.Completed}</option>
+                          <option value="Cancelled">{statusLabels.Cancelled}</option>
                         </select>
                       </td>
                       <td>
@@ -793,35 +849,7 @@ function App() {
                           className="delete-btn"
                           onClick={() => deleteAppointment(item.id)}
                         >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {filteredAppointments.map(item => (
-                    <tr key={item.id}>
-                      <td>{item.patient}</td>
-                      <td>{item.doctor}</td>
-                      <td>{item.date}</td>
-                      <td>{item.time}</td>
-                      <td>
-                        <select
-                          value={item.status}
-                          onChange={e => updateAppointmentStatus(item.id, e.target.value)}
-                        >
-                          <option value="Scheduled">Scheduled</option>
-                          <option value="Completed">Completed</option>
-                          <option value="Cancelled">Cancelled</option>
-                        </select>
-                      </td>
-                      <td>
-                        <button
-                          type="button"
-                          className="delete-btn"
-                          onClick={() => deleteAppointment(item.id)}
-                        >
-                          Delete
+                          حذف
                         </button>
                       </td>
                     </tr>
@@ -831,8 +859,8 @@ function App() {
                     <tr>
                       <td colSpan="6">
                         {appointments.length === 0
-                          ? 'No appointments yet.'
-                          : 'No matching appointments'}
+                          ? 'لا توجد مواعيد بعد.'
+                          : 'لا توجد نتائج مطابقة'}
                       </td>
                     </tr>
                   )}
@@ -843,40 +871,40 @@ function App() {
           </section>
         )}
 
-        {/* Settings */}
+        {/* الإعدادات */}
 
         {page === 'Settings' && (
           <section className="section-card">
 
-            <h2>Settings</h2>
+            <h2>الإعدادات</h2>
 
             <div className="settings-group">
-              <h3>Clinic Profile</h3>
+              <h3>بيانات العيادة</h3>
 
-              <label>Clinic name</label>
+              <label>اسم العيادة</label>
               <input
                 value={settings.clinicName}
                 onChange={e => setSettings({ ...settings, clinicName: e.target.value })}
               />
 
-              <label>Administrator name</label>
+              <label>اسم المدير</label>
               <input
                 value={settings.adminName}
                 onChange={e => setSettings({ ...settings, adminName: e.target.value })}
               />
 
-              <p className="welcome-text">Changes are saved automatically.</p>
+              <p className="welcome-text">يتم حفظ التغييرات تلقائياً.</p>
             </div>
 
             <div className="settings-group">
-              <h3>Data</h3>
+              <h3>البيانات</h3>
 
               <button type="button" className="primary-btn" onClick={exportData}>
-                Download Backup
+                تحميل نسخة احتياطية
               </button>
 
               <button type="button" className="danger-btn" onClick={resetAllData}>
-                Delete All Data
+                حذف كل البيانات
               </button>
             </div>
 
